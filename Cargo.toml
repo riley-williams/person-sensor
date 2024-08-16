@@ -1,9 +1,4 @@
-[package]
-edition = "2021"
-name = "person-sensor"
-version = "0.1.0"
-authors = ["Riley Williams <riley@rileyw.dev>"]
+[workspace]
+package.edition = "2021"
 resolver = "2"
-
-[dependencies]
-embedded-hal-async = "1.0.0"
+members = ["person-sensor", "examples"]
