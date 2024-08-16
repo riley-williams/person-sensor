@@ -1,3 +1,5 @@
+// This example turns on the onboard LED when a certain number of faces are detected
+
 #![no_std]
 #![no_main]
 
@@ -14,6 +16,9 @@ use {defmt_rtt as _, panic_probe as _};
 bind_interrupts!(struct Irqs {
     I2C1_IRQ => i2c::InterruptHandler<I2C1>;
 });
+
+/// The number of faces that must be detected to turn on the LED
+const NUM_FACES: i8 = 2;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -35,7 +40,7 @@ async fn main(_spawner: Spawner) {
     // The pico LED should turn on in sync with the sensor LED
     loop {
         if let Ok(result) = person_sensor.read_results().await {
-            if result.num_faces > 0 {
+            if result.num_faces >= NUM_FACES {
                 led.set_high();
             } else {
                 led.set_low();

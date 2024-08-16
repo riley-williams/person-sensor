@@ -8,12 +8,11 @@
 use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
-    gpio::{Input, Level, Output, Pull},
+    gpio::{Input, Pull},
     i2c::{self, Config},
     peripherals::{I2C1, USB},
     usb::{Driver, InterruptHandler},
 };
-use embassy_time::Timer;
 use person_sensor::PersonSensor;
 use {defmt_rtt as _, panic_probe as _};
 

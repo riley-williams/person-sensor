@@ -5,9 +5,6 @@ runner = "elf2uf2-rs --deploy --serial --verbose"
 [build]
 target = "thumbv6m-none-eabi"
 
-[env]
-DEFMT_LOG = "info"
-
 [profile.release]
 # Allows defmt to display log locations even in release
 debug = true
