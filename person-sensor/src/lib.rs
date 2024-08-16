@@ -1,6 +1,6 @@
 #![no_std]
 
-use embedded_hal_async::digital::Wait;
+use embedded_hal_async::{digital::Wait, i2c::I2c};
 
 const PERSON_SENSOR_I2C_ADDRESS: u8 = 0x62;
 const MAX_FACES: usize = 4;
@@ -55,7 +55,7 @@ pub struct PersonSensorResults {
 #[derive(Debug)]
 pub enum PersonIDError {
     /// IDs can only range from 0 to 7.
-    Overflow,
+    InvalidId,
 }
 
 #[repr(transparent)]
@@ -67,7 +67,7 @@ impl PersonID {
         if id < 8 {
             Ok(PersonID(id))
         } else {
-            Err(PersonIDError::Overflow)
+            Err(PersonIDError::InvalidId)
         }
     }
 }
@@ -91,12 +91,12 @@ pub struct StandbyMode;
 pub struct PersonSensor<I2C, INT, MODE> {
     i2c: I2C,
     interrupt: INT,
-    _mode: core::marker::PhantomData<MODE>,
+    _mode: MODE,
 }
 
 impl<I2C, INT, MODE> PersonSensor<I2C, INT, MODE>
 where
-    I2C: embedded_hal_async::i2c::I2c,
+    I2C: I2c,
     INT: Wait,
 {
     pub async fn read_results(&mut self) -> Result<PersonSensorResults, <I2C>::Error> {
@@ -132,6 +132,9 @@ where
 
     /// Calibrate the next identified frame as person N, from 0 to 7.
     /// If two frames pass with no person, this label is discarded.
+    ///
+    /// > Note: this will not return the result of the calibration, the only failure
+    /// > is if the I2C write fails.
     pub async fn label_next_id(&mut self, id: PersonID) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x04, id.into()])
@@ -168,7 +171,7 @@ where
 
 impl<I2C, INT> PersonSensor<I2C, INT, StandbyMode>
 where
-    I2C: embedded_hal_async::i2c::I2c,
+    I2C: I2c,
     INT: Wait,
 {
     pub async fn trigger_single_shot(&mut self) -> Result<(), I2C::Error> {
@@ -185,21 +188,21 @@ where
         Ok(PersonSensor {
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
-            _mode: core::marker::PhantomData,
+            _mode: ContinuousCaptureMode,
         })
     }
 }
 
 impl<I2C, INT> PersonSensor<I2C, INT, ContinuousCaptureMode>
 where
-    I2C: embedded_hal_async::i2c::I2c,
+    I2C: I2c,
     INT: Wait,
 {
     pub fn new(i2c: I2C, interrupt: INT) -> PersonSensor<I2C, INT, ContinuousCaptureMode> {
         PersonSensor {
             i2c,
             interrupt,
-            _mode: core::marker::PhantomData,
+            _mode: ContinuousCaptureMode,
         }
     }
 
@@ -211,7 +214,7 @@ where
         Ok(PersonSensor {
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
-            _mode: core::marker::PhantomData,
+            _mode: StandbyMode,
         })
     }
 }

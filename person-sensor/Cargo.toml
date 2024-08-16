@@ -3,6 +3,7 @@ edition = "2021"
 name = "person-sensor"
 version = "0.1.0"
 authors = ["Riley Williams <riley@rileyw.dev>"]
+license = "MIT OR Apache-2.0"
 resolver = "2"
 
 [dependencies]

@@ -1,0 +1,59 @@
+[package]
+edition = "2021"
+name = "examples"
+version = "0.1.0"
+authors = ["Riley Williams <riley@rileyw.dev>"]
+resolver = "2"
+
+[dependencies]
+defmt-rtt = "0.4"
+defmt = "0.3"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
+
+embedded-hal = "1.0.0"
+embedded-hal-async = "1.0.0"
+embedded-io = "0.6.1"
+embedded-io-async = "0.6.1"
+embedded-storage = "0.3.1"
+
+cortex-m-rt = "0.7.3"
+critical-section = "1.1"
+
+embassy-usb-logger = { version = "0.2.0" }
+embassy-embedded-hal = { version = "0.2.0", features = ["defmt"] }
+embassy-executor = { version = "0.6.0", features = [
+  "task-arena-size-98304",
+  "arch-cortex-m",
+  "executor-thread",
+  "executor-interrupt",
+  "defmt",
+  "integrated-timers",
+] }
+embassy-sync = { version = "0.6.0" }
+embassy-time = { version = "0.3.0", features = [
+  "defmt",
+  "defmt-timestamp-uptime",
+] }
+embassy-futures = "0.1.1"
+
+cortex-m = { version = "0.7.7" }
+embassy-rp = { version = "0.2.0", features = [
+  "defmt",
+  "unstable-pac",
+  "time-driver",
+  "critical-section-impl",
+] }
+log = "0.4"
+heapless = "0.8"
+
+person-sensor = { path = "../person-sensor" }
+
+[profile.release]
+debug = 2
+lto = true
+opt-level = 's'
+
+[profile.dev]
+debug = 2
+lto = true
+opt-level = "z"
