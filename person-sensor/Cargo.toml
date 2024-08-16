@@ -6,7 +6,7 @@ authors = ["Riley Williams <riley@rileyw.dev>"]
 license = "MIT OR Apache-2.0"
 resolver = "2"
 description = "An embedded-hal driver for the Useful Things Person Sensor"
-readme = "README.md"
+readme = "../README.md"
 repository = "https://github.com/riley-williams/person-sensor"
 keywords = ["no_std", "embedded", "async"]
 
