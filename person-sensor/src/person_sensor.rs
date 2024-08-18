@@ -1,10 +1,4 @@
-//! This module contains the main interface to the person sensor. It provides a high-level
-//! interface to the sensor, abstracting away the I2C communication and interrupt handling.
-//!
-//! The sensor can be used in two modes: continuous capture and standby. In continuous capture
-//! mode, the sensor continuously captures frames and sends the results over I2C. In standby mode,
-//! the sensor is in a low-power state and only captures a single frame when requested.
-//!
+use core::marker::PhantomData;
 
 use embedded_hal_async::{digital::Wait, i2c::I2c};
 
@@ -23,10 +17,38 @@ pub(crate) enum PersonSensorMode {
 pub struct ContinuousCaptureMode;
 pub struct StandbyMode;
 
+/// The person sensor driver.
+///
+/// The sensor can be used in two modes: continuous capture and standby. In continuous capture
+/// mode, the sensor continuously captures frames and sends the results over I2C. In standby mode,
+/// the sensor is in a low-power state and only captures a single frame when requested.
+///
+/// To create the sensor, use the `PersonSensorBuilder`. The builder allows you to set the mode
+/// and interrupt pin.
+///
+/// Example:
+/// ```ignore
+/// let sda = p.PIN_2;
+/// let scl = p.PIN_3;
+/// let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
+/// let interrupt = p.PIN_4;
+///
+/// let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
+///     .with_interrupt(interrupt)
+///     .build()
+///     .await
+///     .unwrap();
+///
+/// loop {
+///    if let Ok(result) = person_sensor.get_detections().await {
+///        // Do something with the results
+///    }
+/// }
+/// ```
 pub struct PersonSensor<I2C, INT, MODE> {
     pub(crate) i2c: I2C,
     pub(crate) interrupt: INT,
-    pub(crate) _mode: MODE,
+    pub(crate) mode: PhantomData<MODE>,
 }
 
 impl<I2C, INT, MODE> PersonSensor<I2C, INT, MODE>
@@ -121,7 +143,7 @@ where
         Ok(PersonSensor {
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
-            _mode: ContinuousCaptureMode,
+            mode: PhantomData,
         })
     }
 }
@@ -140,7 +162,7 @@ where
         Ok(PersonSensor {
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
-            _mode: StandbyMode,
+            mode: PhantomData,
         })
     }
 

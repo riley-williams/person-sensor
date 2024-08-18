@@ -1,6 +1,4 @@
-//! Builder for the PersonSensor driver
-//!
-//! Use this to create a new instance of the PersonSensor driver
+use core::marker::PhantomData;
 
 use embedded_hal_async::{digital::Wait, i2c::I2c};
 
@@ -9,10 +7,13 @@ use crate::{
     PersonSensor,
 };
 
+/// Builder for the PersonSensor driver
+///
+/// Use this to create a new instance of the PersonSensor driver
 pub struct PersonSensorBuilder<I2C, INT, MODE> {
     i2c: I2C,
     interrupt: INT,
-    mode: MODE,
+    mode: PhantomData<MODE>,
 }
 
 impl<I2C> PersonSensorBuilder<I2C, (), ()>
@@ -24,7 +25,7 @@ where
         PersonSensorBuilder {
             i2c,
             interrupt: (),
-            mode: StandbyMode,
+            mode: PhantomData,
         }
     }
 
@@ -33,7 +34,7 @@ where
         PersonSensorBuilder {
             i2c,
             interrupt: (),
-            mode: ContinuousCaptureMode,
+            mode: PhantomData,
         }
     }
 }
@@ -61,7 +62,7 @@ where
         let mut sensor = PersonSensor {
             i2c: self.i2c,
             interrupt: self.interrupt,
-            _mode: ContinuousCaptureMode,
+            mode: PhantomData,
         };
         sensor.set_mode(PersonSensorMode::Continuous).await?;
         Ok(sensor)
@@ -77,7 +78,7 @@ where
         let mut sensor = PersonSensor {
             i2c: self.i2c,
             interrupt: self.interrupt,
-            _mode: StandbyMode,
+            mode: PhantomData,
         };
         sensor.set_mode(PersonSensorMode::Standby).await?;
         Ok(sensor)

@@ -60,7 +60,7 @@ async fn main(_spawner: Spawner) {
 
     led.set_low();
 
-    // repeatedly loop in continuous capture mode
+    // Repeatedly loop in continuous capture mode
     // The pico LED will turn on in sync with the sensor LED when the calibrated face is detected
     loop {
         if let Ok(result) = person_sensor.get_detections().await {
