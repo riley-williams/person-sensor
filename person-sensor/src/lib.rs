@@ -14,7 +14,7 @@
 //! functionality that is only available in a specific mode, or when an interrupt pin is provided.
 //!
 //! ```ignore
-//! use person_sensor::PersonSensor;
+//! use person_sensor::PersonSensorBuilder;
 //!
 //! let i2c = /* ... */;
 //! let interrupt_pin = /* ... */;
