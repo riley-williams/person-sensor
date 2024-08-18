@@ -1,5 +1,5 @@
-// This example flashes the pico onboard LED 3 times, then captures whatever face is present / largest
-// as ID 0. The pico onboard LED will turn on when this face is recognized again.
+//! This example flashes the pico onboard LED 3 times, then captures whatever face is present / largest
+//! as ID 0. The pico onboard LED will turn on when this face is recognized again.
 
 #![no_std]
 #![no_main]
@@ -7,12 +7,12 @@
 use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
-    gpio::{Input, Level, Output, Pull},
-    i2c::{self, Config},
+    gpio::{Level, Output},
+    i2c::{self, Config, I2c},
     peripherals::I2C1,
 };
 use embassy_time::Timer;
-use person_sensor::PersonSensor;
+use person_sensor::PersonSensorBuilder;
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -26,12 +26,13 @@ async fn main(_spawner: Spawner) {
     // Set up I2C1 on pins 2 and 3
     let sda = p.PIN_2;
     let scl = p.PIN_3;
-    let i2c = embassy_rp::i2c::I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
+    let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
 
-    let interrupt = p.PIN_4;
-    let interrupt = Input::new(interrupt, Pull::Down);
-
-    let mut person_sensor = PersonSensor::new(i2c, interrupt);
+    // Create a sensor instance without an interrupt, initialized in continuous mode
+    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
+        .build()
+        .await
+        .unwrap();
 
     let mut led = Output::new(p.PIN_25, Level::Low);
 
@@ -62,7 +63,7 @@ async fn main(_spawner: Spawner) {
     // repeatedly loop in continuous capture mode
     // The pico LED will turn on in sync with the sensor LED when the calibrated face is detected
     loop {
-        if let Ok(result) = person_sensor.read_results().await {
+        if let Ok(result) = person_sensor.get_detections().await {
             if result.num_faces > 0 && result.faces.iter().any(|face| face.id_confidence > 90) {
                 led.set_low();
             } else {

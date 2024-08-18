@@ -1,6 +1,6 @@
-// This example logs capture results over USB serial
-//
-// IMPORTANT: It is critical to run this example with `--release` to avoid panics due to USB timing
+//! This example logs capture results over USB serial
+//!
+//! IMPORTANT: It is critical to run this example with `--release` to avoid panics due to USB timing
 
 #![no_std]
 #![no_main]
@@ -9,11 +9,11 @@ use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
     gpio::{Input, Pull},
-    i2c::{self, Config},
+    i2c::{self, Config, I2c},
     peripherals::{I2C1, USB},
     usb::{Driver, InterruptHandler},
 };
-use person_sensor::PersonSensor;
+use person_sensor::PersonSensorBuilder;
 use {defmt_rtt as _, panic_probe as _};
 
 bind_interrupts!(struct Irqs {
@@ -37,15 +37,22 @@ async fn main(spawner: Spawner) {
     // Set up I2C1 on pins 2 and 3
     let sda = p.PIN_2;
     let scl = p.PIN_3;
-    let i2c = embassy_rp::i2c::I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
+    let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
 
     let interrupt = p.PIN_4;
     let interrupt = Input::new(interrupt, Pull::Down);
 
-    let mut person_sensor = PersonSensor::new(i2c, interrupt);
+    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
+        .with_interrupt(interrupt)
+        .build()
+        .await
+        .unwrap();
+
+    // Turn off the indicator LED
+    _ = person_sensor.set_indicator(false).await;
 
     loop {
-        if let Ok(result) = person_sensor.read_results().await {
+        if let Ok(result) = person_sensor.get_detections().await {
             if result.num_faces > 0 {
                 result.faces.iter().enumerate().for_each(|(i, face)| {
                     let center_x = (face.box_left + face.box_right) / 2;
