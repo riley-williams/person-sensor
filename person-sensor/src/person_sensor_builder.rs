@@ -1,3 +1,7 @@
+//! Builder for the PersonSensor driver
+//!
+//! Use this to create a new instance of the PersonSensor driver
+
 use embedded_hal_async::{digital::Wait, i2c::I2c};
 
 use crate::{

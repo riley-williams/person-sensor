@@ -1,3 +1,11 @@
+//! This module contains the main interface to the person sensor. It provides a high-level
+//! interface to the sensor, abstracting away the I2C communication and interrupt handling.
+//!
+//! The sensor can be used in two modes: continuous capture and standby. In continuous capture
+//! mode, the sensor continuously captures frames and sends the results over I2C. In standby mode,
+//! the sensor is in a low-power state and only captures a single frame when requested.
+//!
+
 use embedded_hal_async::{digital::Wait, i2c::I2c};
 
 use crate::{PersonID, PersonSensorResults};
