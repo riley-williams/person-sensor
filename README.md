@@ -2,10 +2,10 @@
 
 A small driver for the Useful Things Person Sensor.
 
-Original [https://usfl.ink/ps_dev](developer guide)
+Original [developer guide](https://usfl.ink/ps_dev)
 
 This driver has been tested with v1.1 of the sensor, but should also work with v1 and v2.
-If you're able to validate the other board revisions, please open a pr :)
+If you're able to validate the other board revisions, please open a pr to update this message :)
 
 ## Usage
 
