@@ -35,8 +35,6 @@ let detections = person_sensor.capture_once().await.unwrap();
 // or use the builder with new_continuous(...)
 let mut person_sensor = sensor.into_continuous_mode();
 
-person_sensor.get_detections().await.unwrap();
-
 // Now we meet all the requirements to wait for the next detection using the interrupt
 _ = person_sensor.wait_for_person().await.unwrap();
 // Read the latest detections.

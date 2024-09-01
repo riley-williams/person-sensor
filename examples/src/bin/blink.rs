@@ -1,4 +1,5 @@
 //! This example turns on the onboard LED when a certain number of faces are detected
+//! The Person Sensor must have the interrupt pin connected to GPIO 4
 
 #![no_std]
 #![no_main]

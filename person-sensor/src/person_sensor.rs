@@ -23,7 +23,7 @@ pub struct StandbyMode;
 /// mode, the sensor continuously captures frames and sends the results over I2C. In standby mode,
 /// the sensor is in a low-power state and only captures a single frame when requested.
 ///
-/// To create the sensor, use the `PersonSensorBuilder`. The builder allows you to set the mode
+/// To create the sensor, use a `PersonSensorBuilder`. The builder allows you to set the mode
 /// and interrupt pin.
 ///
 /// Example:
@@ -62,7 +62,8 @@ where
             .read(PERSON_SENSOR_I2C_ADDRESS, &mut buffer)
             .await?;
 
-        // TODO: is this really faster?
+        // NOTE: is this really worth it? A heapless::Vec<_, 4> with the correct length might be
+        // more useful to the consumer, as well as an id: Option<PersonID> instead of the odd mismatched i8
         let results = unsafe {
             core::mem::transmute::<
                 [u8; core::mem::size_of::<PersonSensorResults>()],
@@ -99,7 +100,8 @@ where
             .await
     }
 
-    /// Store any recognized IDs even when unpowered.
+    /// Store any recognized IDs even when unpowered. Both current and future IDs will be retained
+    /// when this is set to true.
     pub async fn set_persist_ids(&mut self, persist: bool) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x05, persist as u8])

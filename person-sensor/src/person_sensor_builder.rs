@@ -7,9 +7,9 @@ use crate::{
     PersonSensor,
 };
 
-/// Builder for the PersonSensor driver
+/// Builder for the [`PersonSensor`] driver
 ///
-/// Use this to create a new instance of the PersonSensor driver
+/// Use this to create a new instance of the `PersonSensor` driver
 pub struct PersonSensorBuilder<I2C, INT, MODE> {
     i2c: I2C,
     interrupt: INT,
