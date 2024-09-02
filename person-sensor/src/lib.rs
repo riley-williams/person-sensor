@@ -20,7 +20,7 @@
 //! let interrupt_pin = /* ... */;
 //!
 //! // The driver can be initialized with or without the interrupt pin using the builder
-//! let mut person_sensor = PersonSensorBuilder::new_standby(i2c)
+//! let mut person_sensor = PersonSensorBuilder::new_standby(i2c, true)
 //!     .with_interrupt(interrupt_pin) // optional
 //!     .build()
 //!     .await
@@ -57,13 +57,14 @@ mod person_sensor;
 mod person_sensor_builder;
 
 pub use person_sensor::PersonSensor;
+pub use person_sensor::ReadError;
 pub use person_sensor_builder::PersonSensorBuilder;
 
 /// The number of detections returned by the sensor.
-const NUM_DETECTIONS: usize = 4;
+const MAX_DETECTIONS: usize = 4;
 
 #[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Face {
     /// Confidence of the box prediction, ranges from 1 to 100.
     pub box_confidence: u8,
@@ -80,29 +81,13 @@ pub struct Face {
     /// By default, the sensor will not run any recognition until calibration has been performed.
     /// After at least one person has been calibrated, the sensor will always run recognition on
     /// the largest face present, and assign an ID number if it’s recognized as one that it has been calibrated on.
-    pub id: i8,
+    pub id: Option<PersonID>,
     /// Indicates if somebody is looking directly at the device
-    /// Note ID works most reliably when the face is straight on to the sensor
-    pub is_facing: u8,
+    /// > Note: ID works most reliably when the face is straight on to the sensor
+    pub is_facing: bool,
 }
 
-#[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
-struct ResultsHeader {
-    reserved: [u8; 2],
-    data_size: u16,
-}
-
-#[repr(C, packed)]
-#[derive(Debug, Clone, Copy)]
-pub struct PersonSensorResults {
-    header: ResultsHeader,
-    pub num_faces: i8,
-    pub faces: [Face; NUM_DETECTIONS],
-    checksum: u16,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PersonIDError {
     /// IDs can only range from 0 to 7.
     InvalidId,
@@ -119,6 +104,11 @@ impl PersonID {
         } else {
             Err(PersonIDError::InvalidId)
         }
+    }
+
+    /// Create a new person ID without checking the value
+    pub fn new_unchecked(id: u8) -> Self {
+        PersonID(id)
     }
 }
 

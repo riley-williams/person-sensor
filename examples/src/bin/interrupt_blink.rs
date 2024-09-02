@@ -19,7 +19,7 @@ bind_interrupts!(struct Irqs {
 });
 
 /// The number of faces that must be detected to turn on the LED
-const NUM_FACES: i8 = 2;
+const NUM_FACES: usize = 2;
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
@@ -33,7 +33,9 @@ async fn main(_spawner: Spawner) {
     let interrupt = p.PIN_4;
     let interrupt = Input::new(interrupt, Pull::Down);
 
-    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
+    // Create a sensor instance with an interrupt, initialized in continuous mode, with the ID
+    // model disabled
+    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c, false)
         .with_interrupt(interrupt)
         .build()
         .await
@@ -44,9 +46,9 @@ async fn main(_spawner: Spawner) {
     // wait for the interrupt pin to trigger a result, then read the number of faces
     // The pico LED should turn on in sync with the sensor LED when enough faces are detected
     loop {
-        _ = person_sensor.wait_for_person().await;
-        if let Ok(result) = person_sensor.get_detections().await {
-            if result.num_faces >= NUM_FACES {
+        person_sensor.wait_for_person().await.unwrap();
+        if let Ok(faces) = person_sensor.get_detections().await {
+            if faces.len() >= NUM_FACES {
                 led.set_high();
             } else {
                 led.set_low();

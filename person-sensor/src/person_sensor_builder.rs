@@ -14,6 +14,7 @@ pub struct PersonSensorBuilder<I2C, INT, MODE> {
     i2c: I2C,
     interrupt: INT,
     mode: PhantomData<MODE>,
+    id_enabled: bool,
 }
 
 impl<I2C> PersonSensorBuilder<I2C, (), ()>
@@ -21,20 +22,25 @@ where
     I2C: I2c,
 {
     /// Create a new driver instance without an interrupt, initialized in standby mode
-    pub fn new_standby(i2c: I2C) -> PersonSensorBuilder<I2C, (), StandbyMode> {
+    pub fn new_standby(i2c: I2C, id_enabled: bool) -> PersonSensorBuilder<I2C, (), StandbyMode> {
         PersonSensorBuilder {
             i2c,
             interrupt: (),
             mode: PhantomData,
+            id_enabled,
         }
     }
 
     /// Create a new driver instance without an interrupt, initialized in continuous mode
-    pub fn new_continuous(i2c: I2C) -> PersonSensorBuilder<I2C, (), ContinuousCaptureMode> {
+    pub fn new_continuous(
+        i2c: I2C,
+        id_enabled: bool,
+    ) -> PersonSensorBuilder<I2C, (), ContinuousCaptureMode> {
         PersonSensorBuilder {
             i2c,
             interrupt: (),
             mode: PhantomData,
+            id_enabled,
         }
     }
 }
@@ -49,6 +55,7 @@ where
             i2c: self.i2c,
             interrupt,
             mode: self.mode,
+            id_enabled: self.id_enabled,
         }
     }
 }
@@ -65,6 +72,7 @@ where
             mode: PhantomData,
         };
         sensor.set_mode(PersonSensorMode::Continuous).await?;
+        sensor.enable_id_model(self.id_enabled).await?;
         Ok(sensor)
     }
 }
@@ -81,6 +89,7 @@ where
             mode: PhantomData,
         };
         sensor.set_mode(PersonSensorMode::Standby).await?;
+        sensor.enable_id_model(true).await?;
         Ok(sensor)
     }
 }

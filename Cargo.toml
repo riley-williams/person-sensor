@@ -1,4 +1,0 @@
-[workspace]
-package.edition = "2021"
-resolver = "2"
-members = ["person-sensor", "examples"]

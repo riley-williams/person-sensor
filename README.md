@@ -20,7 +20,7 @@ let i2c = /* ... */;
 let interrupt_pin = /* ... */;
 
 // The driver can be initialized with or without the interrupt pin using the builder
-let mut person_sensor = PersonSensorBuilder::new_standby(i2c)
+let mut person_sensor = PersonSensorBuilder::new_standby(i2c, true)
     .with_interrupt(interrupt_pin) // optional
     .build()
     .await

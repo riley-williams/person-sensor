@@ -8,11 +8,11 @@
 use embassy_executor::Spawner;
 use embassy_rp::{
     bind_interrupts,
-    gpio::{Input, Pull},
     i2c::{self, Config, I2c},
     peripherals::{I2C1, USB},
     usb::{Driver, InterruptHandler},
 };
+use embassy_time::Timer;
 use person_sensor::PersonSensorBuilder;
 use {defmt_rtt as _, panic_probe as _};
 
@@ -39,37 +39,50 @@ async fn main(spawner: Spawner) {
     let scl = p.PIN_3;
     let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
 
-    let interrupt = p.PIN_4;
-    let interrupt = Input::new(interrupt, Pull::Down);
-
-    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
-        .with_interrupt(interrupt)
+    // Create a sensor instance without an interrupt, initialized in continuous mode, with the ID
+    // model enabled
+    let mut person_sensor = PersonSensorBuilder::new_continuous(i2c, true)
         .build()
         .await
         .unwrap();
 
     // Turn off the indicator LED
-    _ = person_sensor.set_indicator(false).await;
+    person_sensor.set_indicator(false).await.unwrap();
 
     loop {
-        if let Ok(result) = person_sensor.get_detections().await {
-            if result.num_faces > 0 {
-                result.faces.iter().enumerate().for_each(|(i, face)| {
-                    let center_x = (face.box_left + face.box_right) / 2;
-                    let center_y = (face.box_top + face.box_bottom) / 2;
-                    let size_x = face.box_right - face.box_left;
-                    let size_y = face.box_bottom - face.box_top;
+        Timer::after_millis(200).await;
+        if let Ok(faces) = person_sensor.get_detections().await {
+            if faces.is_empty() {
+                log::info!("No faces detected");
+                continue;
+            }
 
-                    log::info!(
+            faces.iter().for_each(|face| {
+                let center_x = face.box_left / 2 + face.box_right / 2;
+                let center_y = face.box_top / 2 + face.box_bottom / 2;
+                let size_x = face.box_right - face.box_left;
+                let size_y = face.box_bottom - face.box_top;
+
+                match face.id {
+                    Some(id) => log::info!(
                         "Person {} - x:{}, y:{} - {}x{}",
-                        i,
+                        u8::from(id),
                         center_x,
                         center_y,
                         size_x,
-                        size_y
-                    );
-                });
-            }
-        };
+                        size_y,
+                    ),
+                    None => log::info!(
+                        "Person _ - x:{}, y:{} - {}x{}",
+                        center_x,
+                        center_y,
+                        size_x,
+                        size_y,
+                    ),
+                };
+            });
+        } else {
+            log::info!("Error reading faces");
+        }
     }
 }

@@ -28,8 +28,12 @@ async fn main(_spawner: Spawner) {
     let scl = p.PIN_3;
     let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
 
-    // Create a sensor instance without an interrupt, initialized in standby mode
-    let mut person_sensor = PersonSensorBuilder::new_standby(i2c).build().await.unwrap();
+    // Create a sensor instance without an interrupt, initialized in standby mode, with the ID
+    // model enabled
+    let mut person_sensor = PersonSensorBuilder::new_standby(i2c, true)
+        .build()
+        .await
+        .unwrap();
 
     let mut led = Output::new(p.PIN_25, Level::High);
 
@@ -59,8 +63,8 @@ async fn main(_spawner: Spawner) {
     // Repeatedly loop in continuous capture mode
     // The pico LED will turn on in sync with the sensor LED when the calibrated face is detected
     loop {
-        if let Ok(result) = person_sensor.get_detections().await {
-            if result.num_faces > 0 && result.faces.iter().any(|face| face.id_confidence > 90) {
+        if let Ok(faces) = person_sensor.get_detections().await {
+            if !faces.is_empty() && faces.iter().any(|face| face.id_confidence > 90) {
                 led.set_high();
             } else {
                 led.set_low();

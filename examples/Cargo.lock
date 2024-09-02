@@ -177,6 +177,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "crc16"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "338089f42c427b86394a5ee60ff321da23a5c89c9d89514c829687b26359fcff"
+
+[[package]]
 name = "critical-section"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -640,7 +646,6 @@ dependencies = [
  "embassy-sync 0.6.0",
  "embassy-time",
  "embassy-usb-logger",
- "embedded-hal 1.0.0",
  "embedded-hal-async",
  "embedded-io",
  "embedded-io-async",
@@ -990,9 +995,11 @@ checksum = "57c0d7b74b563b49d38dae00a0c37d4d6de9b432382b2892f0574ddcae73fd0a"
 
 [[package]]
 name = "person-sensor"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
+ "crc16",
  "embedded-hal-async",
+ "heapless 0.8.0",
 ]
 
 [[package]]

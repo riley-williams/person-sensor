@@ -1,8 +1,9 @@
 use core::marker::PhantomData;
 
+use crc16::MCRF4XX;
 use embedded_hal_async::{digital::Wait, i2c::I2c};
 
-use crate::{PersonID, PersonSensorResults};
+use crate::{Face, PersonID, MAX_DETECTIONS};
 
 const PERSON_SENSOR_I2C_ADDRESS: u8 = 0x62;
 
@@ -12,6 +13,18 @@ pub(crate) enum PersonSensorMode {
     Standby = 0x00,
     /// Capture continuously, setting the GPIO trigger pin to high if a face is detected.
     Continuous = 0x01,
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub enum ReadError<E> {
+    ChecksumMismatch,
+    I2CError(E),
+}
+
+impl<E> From<E> for ReadError<E> {
+    fn from(error: E) -> Self {
+        Self::I2CError(error)
+    }
 }
 
 pub struct ContinuousCaptureMode;
@@ -33,18 +46,19 @@ pub struct StandbyMode;
 /// let i2c = I2c::new_async(p.I2C1, scl, sda, Irqs, Config::default());
 /// let interrupt = p.PIN_4;
 ///
-/// let mut person_sensor = PersonSensorBuilder::new_continuous(i2c)
+/// let mut person_sensor = PersonSensorBuilder::new_continuous(i2c, true)
 ///     .with_interrupt(interrupt)
 ///     .build()
 ///     .await
 ///     .unwrap();
 ///
 /// loop {
-///    if let Ok(result) = person_sensor.get_detections().await {
+///    if let Ok(faces) = person_sensor.get_detections().await {
 ///        // Do something with the results
 ///    }
 /// }
 /// ```
+#[derive(Debug)]
 pub struct PersonSensor<I2C, INT, MODE> {
     pub(crate) i2c: I2C,
     pub(crate) interrupt: INT,
@@ -56,22 +70,49 @@ where
     I2C: I2c,
 {
     /// Returns the latest results from the sensor.
-    async fn latest_results(&mut self) -> Result<PersonSensorResults, <I2C>::Error> {
-        let mut buffer = [0u8; core::mem::size_of::<PersonSensorResults>()];
+    async fn latest_results(
+        &mut self,
+    ) -> Result<heapless::Vec<Face, MAX_DETECTIONS>, ReadError<I2C::Error>> {
+        let mut buffer = [0u8; 39];
         self.i2c
             .read(PERSON_SENSOR_I2C_ADDRESS, &mut buffer)
             .await?;
 
-        // NOTE: is this really worth it? A heapless::Vec<_, 4> with the correct length might be
-        // more useful to the consumer, as well as an id: Option<PersonID> instead of the odd mismatched i8
-        let results = unsafe {
-            core::mem::transmute::<
-                [u8; core::mem::size_of::<PersonSensorResults>()],
-                PersonSensorResults,
-            >(buffer)
-        };
+        let checksum = crc16::State::<MCRF4XX>::calculate(&buffer[..37]);
+        if u16::from_le_bytes([buffer[37], buffer[38]]) != checksum {
+            return Err(ReadError::<I2C::Error>::ChecksumMismatch);
+        }
 
-        Ok(results)
+        let mut faces = heapless::Vec::<Face, MAX_DETECTIONS>::new();
+
+        let num_faces = buffer[4];
+        for face_num in 0..num_faces {
+            let face_start_offset = 5 + face_num as usize * 8;
+
+            let id_confidence = buffer[face_start_offset + 5] as i8;
+            let person_id = match id_confidence {
+                0 => None,
+                _ => Some(PersonID::new_unchecked(buffer[face_start_offset + 6])),
+            };
+
+            let face = Face {
+                box_confidence: buffer[face_start_offset],
+                box_left: buffer[face_start_offset + 1],
+                box_top: buffer[face_start_offset + 2],
+                box_right: buffer[face_start_offset + 3],
+                box_bottom: buffer[face_start_offset + 4],
+                id_confidence,
+                id: person_id,
+                is_facing: buffer[face_start_offset + 7] > 0,
+            };
+
+            match faces.push(face) {
+                Ok(_) => {}
+                Err(_) => break,
+            };
+        }
+
+        Ok(faces)
     }
 
     /// Sets the mode of the sensor.
@@ -128,7 +169,9 @@ where
     I2C: I2c,
 {
     /// Capture a single frame and reads the results
-    pub async fn capture_once(&mut self) -> Result<PersonSensorResults, I2C::Error> {
+    pub async fn capture_once(
+        &mut self,
+    ) -> Result<heapless::Vec<Face, MAX_DETECTIONS>, ReadError<I2C::Error>> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x03, 0x00])
             .await?;
@@ -168,8 +211,14 @@ where
         })
     }
 
-    /// Returns the latest results from the sensor.
-    pub async fn get_detections(&mut self) -> Result<PersonSensorResults, <I2C>::Error> {
+    /// Returns the latest results from the sensor. Depending on the device version and
+    /// configuration, detections are updated at different rates. This method does not wait for new
+    /// detections to be available, and will repeatedly read the latest detections.
+    ///
+    /// It is the responsibility of the consumer to sensibly rate-limit fetching results.
+    pub async fn get_detections(
+        &mut self,
+    ) -> Result<heapless::Vec<Face, MAX_DETECTIONS>, ReadError<I2C::Error>> {
         self.latest_results().await
     }
 }
