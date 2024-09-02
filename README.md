@@ -1,5 +1,8 @@
 # Useful Things Person Sensor
 
+[![Crates.io](https://img.shields.io/crates/v/person-sensor.svg)](https://crates.io/crates/person-sensor)
+[![Documentation](https://docs.rs/person-sensor/badge.svg)](https://docs.rs/person-sensor/)
+
 A small driver for the Useful Things Person Sensor.
 
 Original [developer guide](https://usfl.ink/ps_dev)
