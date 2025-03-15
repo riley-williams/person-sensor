@@ -12,9 +12,9 @@ keywords = ["no_std", "embedded", "async"]
 
 [dependencies]
 crc16 = "0.4.0"
-embedded-hal-async = "1.0.0"
-heapless = "0.8.0"
+embedded-hal-async = "^1.0"
+heapless = "^0.8"
 
 [dev-dependencies]
-tokio = { version = "1.40.0", features = ["full"] }
+tokio = { version = "1.44.1", features = ["full"] }
 tokio-test = "0.4.4"
