@@ -15,32 +15,32 @@ embedded-io = "0.6.1"
 embedded-io-async = "0.6.1"
 embedded-storage = "0.3.1"
 
-cortex-m-rt = "0.7.3"
-critical-section = "1.1"
+cortex-m-rt = "0.7.5"
+critical-section = "1.2"
 
-embassy-usb-logger = { version = "0.2.0" }
-embassy-embedded-hal = { version = "0.2.0", features = ["defmt"] }
-embassy-executor = { version = "0.6.0", features = [
+embassy-usb-logger = { version = "0.4.0" }
+embassy-embedded-hal = { version = "0.3.0", features = ["defmt"] }
+embassy-executor = { version = "0.7.0", features = [
   "task-arena-size-98304",
   "arch-cortex-m",
   "executor-thread",
   "executor-interrupt",
   "defmt",
-  "integrated-timers",
 ] }
-embassy-sync = { version = "0.6.0" }
-embassy-time = { version = "0.3.0", features = [
+embassy-sync = { version = "0.6.2" }
+embassy-time = { version = "0.4.0", features = [
   "defmt",
   "defmt-timestamp-uptime",
 ] }
 embassy-futures = "0.1.1"
 
 cortex-m = { version = "0.7.7" }
-embassy-rp = { version = "0.2.0", features = [
+embassy-rp = { version = "0.4.0", features = [
   "defmt",
   "unstable-pac",
   "time-driver",
   "critical-section-impl",
+  "rp2040",
 ] }
 log = "0.4"
 heapless = "0.8"
