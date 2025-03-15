@@ -212,7 +212,7 @@ dependencies = [
 
 [[package]]
 name = "person-sensor"
-version = "0.3.0"
+version = "0.3.1"
 dependencies = [
  "crc16",
  "embedded-hal-async",

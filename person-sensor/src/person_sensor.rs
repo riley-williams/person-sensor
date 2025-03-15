@@ -105,6 +105,8 @@ where
         let mut faces = heapless::Vec::<Face, MAX_DETECTIONS>::new();
 
         let num_faces = buffer[4];
+
+        #[expect(clippy::cast_possible_wrap)]
         for face_num in 0..num_faces {
             let face_start_offset = 5 + face_num as usize * 8;
 
@@ -126,7 +128,7 @@ where
             };
 
             match faces.push(face) {
-                Ok(_) => {}
+                Ok(()) => {}
                 Err(_) => break,
             };
         }
@@ -142,7 +144,7 @@ where
     }
 
     /// Enable / Disable the ID model. Greater performance can be achieved by disabling ID labeling.
-    pub async fn set_id_model_mode(&mut self, mode: IDMode) -> Result<(), I2C::Error> {
+    pub async fn set_id_mode(&mut self, mode: IDMode) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x02, mode as u8])
             .await
@@ -153,11 +155,11 @@ where
     /// With this flag set to false, only bounding boxes are captured and the framerate is increased.
     #[deprecated(
         since = "0.3.1",
-        note = "Please use `set_id_model_mode` instead. This method will be removed in a future release."
+        note = "Please use `set_id_mode` instead. This method will be removed in a future release."
     )]
     pub async fn enable_id_model(&mut self, enable: bool) -> Result<(), I2C::Error> {
         self.i2c
-            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x02, enable as u8])
+            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x02, u8::from(enable)])
             .await
     }
 
@@ -186,7 +188,7 @@ where
     /// Both current and future IDs will be retained when this is set to true.
     pub async fn set_persist_ids(&mut self, persist: bool) -> Result<(), I2C::Error> {
         self.i2c
-            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x05, persist as u8])
+            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x05, u8::from(persist)])
             .await
     }
 
@@ -200,7 +202,7 @@ where
     /// Whether to enable the LED indicator on the sensor.
     pub async fn set_indicator(&mut self, enabled: bool) -> Result<(), I2C::Error> {
         self.i2c
-            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x07, enabled as u8])
+            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x07, u8::from(enabled)])
             .await
     }
 }

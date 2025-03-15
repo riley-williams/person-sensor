@@ -67,7 +67,7 @@ where
     /// Initialize the sensor in continuous mode
     #[expect(
         deprecated,
-        reason = "Use `set_id_model_mode` when bool is fully deprecated"
+        reason = "Use `set_id_mode` when bool is fully deprecated"
     )]
     pub async fn build(self) -> Result<PersonSensor<I2C, INT, ContinuousCaptureMode>, I2C::Error> {
         let mut sensor = PersonSensor {
@@ -89,7 +89,7 @@ where
     /// Initialize the sensor in standby mode
     #[expect(
         deprecated,
-        reason = "Use `set_id_model_mode` when bool is fully deprecated"
+        reason = "Use `set_id_mode` when bool is fully deprecated"
     )]
     pub async fn build(self) -> Result<PersonSensor<I2C, INT, StandbyMode>, I2C::Error> {
         let mut sensor = PersonSensor {

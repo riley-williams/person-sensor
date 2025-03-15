@@ -108,6 +108,7 @@ impl PersonID {
     }
 
     /// Create a new person ID without checking the value
+    #[must_use]
     pub fn new_unchecked(id: u8) -> Self {
         PersonID(id)
     }
