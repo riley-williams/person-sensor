@@ -27,3 +27,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Clippy
         run: cargo clippy --manifest-path person-sensor/Cargo.toml -- -D warnings
+
+  semver-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check semver
+        uses: obi1kenobi/cargo-semver-checks-action@v2
+        with:
+          manifest-path: "person-sensor/Cargo.toml"
