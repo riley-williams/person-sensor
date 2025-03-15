@@ -15,6 +15,21 @@ pub(crate) enum PersonSensorMode {
     Continuous = 0x01,
 }
 
+/// The operating mode of the face labeling model.
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[repr(u8)]
+pub enum IDMode {
+    /// Faces will be returned with both the location and ID, if IDs have been set up.
+    ///
+    /// The device will generate results at a lower rate in this mode due to the additional
+    /// processing.
+    LabelAndLocation = 0x01,
+    /// Faces will be returned with only the location, even if IDs are persisted.
+    ///
+    /// The device will generate results at a higher rate in this mode.
+    LocationOnly = 0x00,
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ReadError<E> {
     ChecksumMismatch,
@@ -30,7 +45,7 @@ impl<E> From<E> for ReadError<E> {
 pub struct ContinuousCaptureMode;
 pub struct StandbyMode;
 
-/// The person sensor driver.
+/// Person sensor driver.
 ///
 /// The sensor can be used in two modes: continuous capture and standby. In continuous capture
 /// mode, the sensor continuously captures frames and sends the results over I2C. In standby mode,
@@ -40,6 +55,7 @@ pub struct StandbyMode;
 /// and interrupt pin.
 ///
 /// Example:
+///
 /// ```ignore
 /// let sda = p.PIN_2;
 /// let scl = p.PIN_3;
@@ -63,6 +79,7 @@ pub struct PersonSensor<I2C, INT, MODE> {
     pub(crate) i2c: I2C,
     pub(crate) interrupt: INT,
     pub(crate) mode: PhantomData<MODE>,
+    pub(crate) validate_checksum: bool,
 }
 
 impl<I2C, INT, MODE> PersonSensor<I2C, INT, MODE>
@@ -78,9 +95,11 @@ where
             .read(PERSON_SENSOR_I2C_ADDRESS, &mut buffer)
             .await?;
 
-        let checksum = crc16::State::<MCRF4XX>::calculate(&buffer[..37]);
-        if u16::from_le_bytes([buffer[37], buffer[38]]) != checksum {
-            return Err(ReadError::<I2C::Error>::ChecksumMismatch);
+        if self.validate_checksum {
+            let checksum = crc16::State::<MCRF4XX>::calculate(&buffer[..37]);
+            if u16::from_le_bytes([buffer[37], buffer[38]]) != checksum {
+                return Err(ReadError::<I2C::Error>::ChecksumMismatch);
+            }
         }
 
         let mut faces = heapless::Vec::<Face, MAX_DETECTIONS>::new();
@@ -122,27 +141,49 @@ where
             .await
     }
 
-    /// Enable / Disable the ID model. With this flag set to false, only bounding boxes are
-    /// captured and the framerate is increased.
+    /// Enable / Disable the ID model. Greater performance can be achieved by disabling ID labeling.
+    pub async fn set_id_model_mode(&mut self, mode: IDMode) -> Result<(), I2C::Error> {
+        self.i2c
+            .write(PERSON_SENSOR_I2C_ADDRESS, &[0x02, mode as u8])
+            .await
+    }
+
+    /// Enable / Disable the ID model.
+    ///
+    /// With this flag set to false, only bounding boxes are captured and the framerate is increased.
+    #[deprecated(
+        since = "0.3.1",
+        note = "Please use `set_id_model_mode` instead. This method will be removed in a future release."
+    )]
     pub async fn enable_id_model(&mut self, enable: bool) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x02, enable as u8])
             .await
     }
 
+    /// Validate the checksum of the data received from the sensor. On by default.
+    ///
+    /// Checksum validation may be useful for diagnosing I2C communication issues,
+    /// but is not necessary for normal operation.
+    pub fn set_checksum_enabled(&mut self, enable: bool) {
+        self.validate_checksum = enable;
+    }
+
     /// Calibrate the next identified frame as person N, from 0 to 7.
     /// If two frames pass with no person, this label is discarded.
     ///
-    /// > Note: this will not return the result of the calibration, the only failure
-    /// > is if the I2C write fails.
+    /// This will not return the result of the calibration. The only failure
+    /// is if the I2C write fails. You may wish to follow calibration with a
+    /// check for detections containing the ID you just attempted to label.
     pub async fn label_next_id(&mut self, id: PersonID) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x04, id.into()])
             .await
     }
 
-    /// Store any recognized IDs even when unpowered. Both current and future IDs will be retained
-    /// when this is set to true.
+    /// Store any recognized IDs even when unpowered.
+    ///
+    /// Both current and future IDs will be retained when this is set to true.
     pub async fn set_persist_ids(&mut self, persist: bool) -> Result<(), I2C::Error> {
         self.i2c
             .write(PERSON_SENSOR_I2C_ADDRESS, &[0x05, persist as u8])
@@ -189,6 +230,7 @@ where
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
             mode: PhantomData,
+            validate_checksum: sensor.validate_checksum,
         })
     }
 }
@@ -208,14 +250,19 @@ where
             i2c: sensor.i2c,
             interrupt: sensor.interrupt,
             mode: PhantomData,
+            validate_checksum: sensor.validate_checksum,
         })
     }
 
-    /// Returns the latest results from the sensor. Depending on the device version and
-    /// configuration, detections are updated at different rates. This method does not wait for new
-    /// detections to be available, and will repeatedly read the latest detections.
+    /// Returns the latest results from the sensor.
     ///
-    /// It is the responsibility of the consumer to sensibly rate-limit fetching results.
+    /// Depending on the device version and configuration, detections are updated at different
+    /// rates. This method does not wait for _new_ detections to be available. The last detections
+    /// will repeatedly read until the device produces new ones.
+    ///
+    /// It is your responsibility to either sensibly rate-limit fetching results to the maximum rate
+    /// of the sensor or initialize the driver with an interrupt pin to be notified when new
+    /// results are available.
     pub async fn get_detections(
         &mut self,
     ) -> Result<heapless::Vec<Face, MAX_DETECTIONS>, ReadError<I2C::Error>> {

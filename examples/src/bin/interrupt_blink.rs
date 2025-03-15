@@ -43,8 +43,8 @@ async fn main(_spawner: Spawner) {
 
     let mut led = Output::new(p.PIN_25, Level::Low);
 
-    // wait for the interrupt pin to trigger a result, then read the number of faces
-    // The pico LED should turn on in sync with the sensor LED when enough faces are detected
+    // Wait for the interrupt pin to trigger a result, then read the number of faces
+    // The Pico LED should turn on in sync with the sensor LED when enough faces are detected
     loop {
         person_sensor.wait_for_person().await.unwrap();
         if let Ok(faces) = person_sensor.get_detections().await {

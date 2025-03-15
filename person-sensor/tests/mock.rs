@@ -117,6 +117,19 @@ async fn bad_checksum_standby() {
 }
 
 #[tokio::test]
+async fn bad_checksum_ignored_when_disabled() {
+    let i2c = MockPersonSensorBus::new(1, &BAD_CHECKSUM);
+
+    let mut person_sensor = PersonSensorBuilder::new_standby(i2c, false)
+        .build()
+        .await
+        .unwrap();
+    person_sensor.set_checksum_enabled(false);
+
+    _ = person_sensor.capture_once().await.unwrap();
+}
+
+#[tokio::test]
 async fn set_mode_on_init() {
     let i2c = MockPersonSensorBus::new(0, &NO_FACES);
 

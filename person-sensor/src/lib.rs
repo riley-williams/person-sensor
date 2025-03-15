@@ -5,7 +5,7 @@
 //! Original [developer guide](https://usfl.ink/ps_dev)
 //!
 //! This driver has been tested with v1.1 of the sensor, but should also work with v1 and v2.
-//! If you're able to validate the other board revisions, please open a pr to update this message :)
+//! If you're able to validate the other board revisions, please open a PR to update this message :)
 //!
 //! ## Usage
 //!
@@ -56,6 +56,7 @@
 mod person_sensor;
 mod person_sensor_builder;
 
+pub use person_sensor::IDMode;
 pub use person_sensor::PersonSensor;
 pub use person_sensor::ReadError;
 pub use person_sensor_builder::PersonSensorBuilder;
