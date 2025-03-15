@@ -19,6 +19,8 @@ jobs:
         run: cargo build --verbose --manifest-path person-sensor/Cargo.toml
       - name: Run tests
         run: cargo test --verbose --manifest-path person-sensor/Cargo.toml
+      - name: Build Examples
+        run: cd examples && cargo build --verbose
 
   clippy:
     runs-on: ubuntu-latest
